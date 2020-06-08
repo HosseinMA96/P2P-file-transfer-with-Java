@@ -1,132 +1,180 @@
+/**
+ * This class represents a node.
+ */
 package Node;
 
-import java.io.*;
+import javax.swing.*;
+import java.awt.*;
+import java.io.File;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.Scanner;
+import java.util.Vector;
+
 
 public class Node {
-    private int port;
-    private String ip, name;
-    private ArrayList<Node> cluster;
+    public static int udpPort, tcpPort;
+    public static long requestWaitPeriod=1000, requestTime;
+    public static String ip, name;
+    public static Vector<Node> cluster, nodesAlreadyGotFileFrom;
+    public static File nestFile;
 
-    public Node(String ip, int port, String name) {
-        this.port = port;
+    private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE";
+
+    /**
+     * Constructor for this class
+     *
+     * @param ip
+     * @param udpPort
+     * @param name
+     */
+    public Node(String ip, int udpPort, String name) {
+        this.udpPort = udpPort;
         this.ip = ip;
-        this.cluster = new ArrayList<>();
+        this.cluster = new Vector<Node>();
+        this.nodesAlreadyGotFileFrom = new Vector<Node>();
         this.name = name;
+        tcpPort = createRandomTcpPort();
 
-        Random random = new Random();
-        int randomInteger = random.nextInt();
-
-        port = randomInteger % 65536;
+        loop();
     }
 
-    void sendDiscovery() throws Exception {
-        String msg = createMessage();
+    private void loop() {
+        while (true) {
+            Scanner scanner = new Scanner(System.in);
+            String inputString = scanner.nextLine();
 
-        for (int i = 0; i < cluster.size(); i++)
-            sendSignal(cluster.get(i).getIp(), cluster.get(i).getPort(), msg);
+            System.out.println(inputString);
+
+
+        }
     }
 
-    String createMessage() {
-        String ans = "";
+    private void processString(String s) {
+        if (s.equals("LIST") || s.equals("list"))
+            list();
+
+
+        if (s.substring(0, 3).equals("GET") || s.substring(0, 3).equals("get"))
+        {
+            if(searchIfIhaveTheFile(s.substring(3)))
+                JOptionPane.showMessageDialog(null,"You already have this file on your nest path! request was not sent");
+
+            else
+                get(s.substring(3));
+
+        }
+
+    }
+
+    /**
+     * Given string s which is a file name, see if this host has the file so that it won't send request to other nodes
+     *
+     * @param s
+     * @return
+     */
+    private boolean searchIfIhaveTheFile(String s) {
+        File[] f = nestFile.listFiles();
+
+        for (int i = 0; i < f.length; i++)
+            if (f[i].getName().equals(s))
+                return true;
+
+        return false;
+    }
+
+    private int createRandomTcpPort() {
+        return 10000;
+    }
+
+    private void list() {
+        System.out.println("This is node " + this.getName() + " with ip addres " + ip + " udp port " + udpPort);
+
+        System.out.println("And its cluster is : ");
+
         for (int i = 0; i < cluster.size(); i++)
-            ans = ans + cluster.get(i).getName() + "|" + cluster.get(i).getIp() + "p" + cluster.get(i).getPort() + "\n";
+            System.out.println("Node " + cluster.get(i).getName() + " ip addres " + cluster.get(i).getIp() + " udp port " + cluster.get(i).getUDPPort());
 
-        return ans;
-
+        System.out.println("\n");
     }
 
     public String getName() {
         return name;
     }
 
-    void sendSignal(String ip, int port, String msg) throws Exception {
-        // byte[] message=(ip+"@"+port).getBytes();
-        byte[] message = msg.getBytes();
-        InetAddress address = InetAddress.getByName(ip);
-        //http://www.java2s.com/Code/Java/Network-Protocol/SendoutUDPpockets.htm
-        DatagramPacket packet = new DatagramPacket(message, message.length,
-                address, port);
+    private void generateNestFile() {
+        nestFile = new File(nestPath);
+        if (!nestFile.isDirectory() || !nestFile.exists())
+            JOptionPane.showMessageDialog((Component) null, "Your base directory does not exist!", "Error", 1);
+    }
 
-        DatagramSocket dsocket = new DatagramSocket();
-        dsocket.send(packet);
-        dsocket.close();
+    private void get(String msg) {
+        requestTime = System.currentTimeMillis();
+        GetSender gs = new GetSender(msg);
+        gs.start();
+    }
+
+    public void deleteFile(File f) {
+        int i;
+
+
+        if (f.isFile()) {
+            try {
+                f.delete();
+            } catch (Exception var5) {
+                var5.printStackTrace();
+            }
+        }
+
+        if (f.isDirectory()) {
+            File[] temp = f.listFiles();
+
+            for (i = 0; i < temp.length; ++i) {
+                this.deleteFile(temp[i]);
+            }
+
+            try {
+                if (!f.delete()) {
+                    System.out.println("ERROR IN DELETING");
+                }
+            } catch (Exception var4) {
+            }
+        }
+
     }
 
 
-    void receiveSignal() {
+    /**
+     * Send a string through udp to specific ip and port
+     *
+     * @param ip
+     * @param port
+     * @param msg
+     * @throws Exception
+     */
+    public static void sendUDPSignal(String ip, int port, String msg) {
+        // byte[] message=(ip+"@"+udpPort).getBytes();
+        byte[] message = msg.getBytes();
         try {
-            DatagramSocket dsocket = new DatagramSocket(port);
-            //http://www.java2s.com/Code/Java/Network-Protocol/ReceiveUDPpockets.htm
-            byte[] buffer = new byte[2048];
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            dsocket.receive(packet);
+            InetAddress address = InetAddress.getByName(ip);
+            //http://www.java2s.com/Code/Java/Network-Protocol/SendoutUDPpockets.htm
+            DatagramPacket packet = new DatagramPacket(message, message.length,
+                    address, port);
 
-            String msg = new String(buffer, 0, packet.getLength());
-            System.out.println(packet.getAddress().getHostName() + ": " + msg);
+            DatagramSocket dsocket = new DatagramSocket();
+            dsocket.send(packet);
+            dsocket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public int getPort() {
-        return port;
+
+    public int getUDPPort() {
+        return udpPort;
     }
 
-
-    void update(String msg) {
-        // ans=ans+cluster.get(i).getName()+"|"+cluster.get(i).getIp()+"p"+cluster.get(i).getPort()+"\n";asdasdasdasd;
-        int temp = 0, temp2 = 0;
-
-        for (int i = 0; i < msg.length(); i++)
-            if (msg.charAt(i) == '|') {
-                temp = i;
-                break;
-            }
-
-        String nodeName = msg.substring(0, temp);
-
-        for (int i = temp + 1; i < msg.length(); i++)
-            if (msg.charAt(i) == 'p') {
-                temp2 = i;
-                break;
-            }
-
-        String nodeIp = msg.substring(temp + 1, temp2);
-
-        for (int i = temp2 + 1; i < msg.length(); i++)
-            if (msg.charAt(i) == '\n') {
-                temp = i;
-                break;
-            }
-
-        int nodePort = Integer.parseInt(msg.substring(temp2 + 1, temp));
-
-        String m = msg.substring(temp + 1);
-
-        boolean currentlyExists=false;
-
-        for (int i=0;i<cluster.size();i++)
-            if(cluster.get(i).getName().equals(nodeName))
-            {
-                currentlyExists=true;
-                break;
-            }
-
-
-        if(!currentlyExists)
-            cluster.add(new Node(nodeIp,nodePort,nodeName));
-
-
-        if(m.length()>2)
-             update(m);
-
-    }
 
     public String getIp() {
         return ip;
@@ -136,7 +184,7 @@ public class Node {
     public void comm() {
         while (true) {
             try {
-                sendSignal("127.0.0.1", 30000, "PIOP");
+                sendUDPSignal("127.0.0.1", 30000, "PIOP");
                 System.out.println("I SENT");
                 break;
             } catch (Exception e) {
