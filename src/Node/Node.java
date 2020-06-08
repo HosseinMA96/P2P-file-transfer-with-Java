@@ -5,21 +5,28 @@ package Node;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.util.Scanner;
+import java.util.TimerTask;
 import java.util.Vector;
 
 
 public class Node {
     public static int udpPort, tcpPort;
-    public static long requestWaitPeriod=1000, requestTime;
+    public static long requestWaitPeriod = 1000, requestTime;
+    public static int discoveryIntervalMillisec;
     public static String ip, name;
     public static Vector<Node> cluster, nodesAlreadyGotFileFrom;
     public static File nestFile;
-    public static int servingCount=0;
+    public static int servingCount = 0;
+    private Timer timer;
 
     private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE";
 
@@ -37,14 +44,33 @@ public class Node {
         this.nodesAlreadyGotFileFrom = new Vector<Node>();
         this.name = name;
         tcpPort = createRandomTcpPort();
+       // new Timer(delayInMiliSeconds, syncPerformer)).start();
+
+
+        timer=new Timer(discoveryIntervalMillisec, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                DiscoverySender ds=new DiscoverySender(cluster);
+            }
+        });
+
 
         loop();
     }
 
+
+
     private void loop() {
+        UDPBroadcast udpBroadcast=new UDPBroadcast();
+        udpBroadcast.start();
+
+        TCPBroadcast tcpBroadcast=new TCPBroadcast();
+        tcpBroadcast.start();
+
         while (true) {
             Scanner scanner = new Scanner(System.in);
             String inputString = scanner.nextLine();
+            processString(inputString);
 
             System.out.println(inputString);
 
@@ -52,15 +78,15 @@ public class Node {
         }
     }
 
+
     private void processString(String s) {
         if (s.equals("LIST") || s.equals("list"))
             list();
 
 
-        if (s.substring(0, 3).equals("GET") || s.substring(0, 3).equals("get"))
-        {
-            if(searchIfIhaveTheFile(s.substring(3)))
-                JOptionPane.showMessageDialog(null,"You already have this file on your nest path! request was not sent");
+        if (s.substring(0, 3).equals("GET") || s.substring(0, 3).equals("get")) {
+            if (searchIfIhaveTheFile(s.substring(3)))
+                JOptionPane.showMessageDialog(null, "You already have this file on your nest path! request was not sent");
 
             else
                 get(s.substring(3));
@@ -86,8 +112,39 @@ public class Node {
     }
 
     private int createRandomTcpPort() {
-        return 10000;
+        /**
+         * Returns a free port number on localhost.
+         *
+         * Heavily inspired from org.eclipse.jdt.launching.SocketUtil (to avoid a dependency to JDT just because of this).
+         * Slightly improved with close() missing in JDT. And throws exception instead of returning -1.
+         *
+         * @return a free port number on localhost
+         * @throws IllegalStateException if unable to find a free port
+         */
+        //   private static int findFreePort() {
+        ServerSocket socket = null;
+        try {
+            socket = new ServerSocket(0);
+            socket.setReuseAddress(true);
+            int port = socket.getLocalPort();
+            try {
+                socket.close();
+            } catch (IOException e) {
+                // Ignore IOException on close()
+            }
+            return port;
+        } catch (IOException e) {
+        } finally {
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                }
+            }
+        }
+        throw new IllegalStateException("Could not find a free TCP/IP port to start embedded Jetty HTTP Server on");
     }
+
 
     private void list() {
         System.out.println("This is node " + this.getName() + " with ip addres " + ip + " udp port " + udpPort);
@@ -195,8 +252,9 @@ public class Node {
     }
 
 
-    public static void main(String[] args) {
-        Node node = new Node("127.0.0.1", 30000, "N1");
-        node.comm();
+      public static void main(String[] args) {
+         Node node = new Node("127.0.0.1", 30000, "N1");
+         node.comm();
     }
 }
+

@@ -1,12 +1,13 @@
 package Node;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 public class DiscoverySender extends Thread {
-    private ArrayList<Node> cluster;
+    private Vector<Node> cluster;
 
-    public DiscoverySender(ArrayList<Node> n) {
-        cluster = n;
+    public DiscoverySender(Vector<Node> vector) {
+        cluster =vector;
     }
 
     @Override
