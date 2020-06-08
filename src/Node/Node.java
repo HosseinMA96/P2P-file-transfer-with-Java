@@ -19,6 +19,7 @@ public class Node {
     public static String ip, name;
     public static Vector<Node> cluster, nodesAlreadyGotFileFrom;
     public static File nestFile;
+    public static int servingCount=0;
 
     private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE";
 

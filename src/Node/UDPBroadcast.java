@@ -16,13 +16,17 @@ public class UDPBroadcast extends Thread{
     @Override
     public void run()
     {
-
+        while(true)
+        {
+            String s=receiveUdpSignal();
+            multiplexUDPpacket(s);
+        }
     }
 
     /**
      * Receive a UDP packet. This can be either Get command or discovery message
      */
-    void receiveUdpSignal() {
+    private String receiveUdpSignal() {
         try {
             DatagramSocket dsocket = new DatagramSocket(Node.udpPort);
             //http://www.java2s.com/Code/Java/Network-Protocol/ReceiveUDPpockets.htm
@@ -35,12 +39,15 @@ public class UDPBroadcast extends Thread{
 
 
             String msg = new String(buffer, 0, packet.getLength());
+            return msg;
 
 
            // System.out.println(packet.getAddress().getHostName() + ": " + msg);
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        return "";
     }
 
 
@@ -126,6 +133,14 @@ public class UDPBroadcast extends Thread{
             Node.sendUDPSignal(requesterIP.getHostAddress(),requesterPort,"TCP"+Node.ip+"/"+Node.tcpPort);
         }
 
+
+    }
+
+    /**
+     * Piggyback
+     */
+    private void trick()
+    {
 
     }
 
