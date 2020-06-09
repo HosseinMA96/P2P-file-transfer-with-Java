@@ -5,17 +5,28 @@ import java.util.Vector;
 
 public class DiscoverySender extends Thread {
     private Vector<Node> cluster;
+    private Node node;
+    private long repeatTime;
 
-    public DiscoverySender(Vector<Node> vector) {
-        cluster =vector;
+    public DiscoverySender( Node n,long t) {
+        cluster =n.cluster;
+        node=n;
+        repeatTime=t;
     }
 
     @Override
     public void run() {
-        try {
-            sendDiscovery();
-        } catch (Exception e) {
-            e.printStackTrace();
+        while(true)
+        {
+            long temp=System.currentTimeMillis();
+
+            while(System.currentTimeMillis()<temp+repeatTime);
+
+            try {
+                sendDiscovery();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -24,12 +35,13 @@ public class DiscoverySender extends Thread {
         String ans = "DIS";
 
         //Add yourself
-        cluster.add(new Node(Node.ip,Node.udpPort,Node.name));
+        node.cluster.add(new Node(node.ip,node.udpPort,node.name));
         for (int i = 0; i < cluster.size(); i++)
             ans = ans + cluster.get(i).getName() + "|" + cluster.get(i).getIp() + "p" + cluster.get(i).getUDPPort() + "\n";
 
-        cluster.remove(cluster.size()-1);
-
+        for (int i=0;i< node.cluster.size();i++)
+            if(node.cluster.get(i).getName().equals(node.getName()))
+                node.cluster.remove(i);
 
 
         return ans;
@@ -37,8 +49,10 @@ public class DiscoverySender extends Thread {
     }
 
 
-    void sendDiscovery() throws Exception {
+    void sendDiscovery()  {
         String msg = createMessage();
+        //      System.out.println("SEND DISCOVERY, MSG IS : "+msg);
+
 
         for (int i = 0; i < cluster.size(); i++)
             Node.sendUDPSignal(cluster.get(i).getIp(), cluster.get(i).getUDPPort(), msg);

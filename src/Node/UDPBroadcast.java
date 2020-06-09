@@ -6,29 +6,55 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Vector;
 
-import static Node.Node.cluster;
-import static Node.Node.nodesAlreadyGotFileFrom;
+
 
 public class UDPBroadcast extends Thread{
     private int requesterPort;
     private InetAddress requesterIP;
-    public static Vector<Respond>responders=new Vector<>();
+    public  Vector<Respond>responders=new Vector<>();
+    private Vector<Node>nodesAlreadyGotFileFrom;
+    private Node node;
+
+    public UDPBroadcast(Node n)
+    {
+        node=n;
+        nodesAlreadyGotFileFrom=new Vector<Node>();
+    }
+
     @Override
     public void run()
     {
         while(true)
         {
             String s=receiveUdpSignal();
+       //     System.out.println("PAST IN RECEIVE, HERE IS THE MESSAGE : ");
+        //    System.out.println(s);
+         //   System.out.println("\n\n");
+
             multiplexUDPpacket(s);
+            //     System.out.println("PAST IN RECEIVE");
+            try {
+                //      sleep(10);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
     }
+
+    //   public void gun()
+    //  {
+    //     System.out.println("GUN");
+    //  }
 
     /**
      * Receive a UDP packet. This can be either Get command or discovery message
      */
     private String receiveUdpSignal() {
         try {
-            DatagramSocket dsocket = new DatagramSocket(Node.udpPort);
+            // System.out.println("THE UDP PORT IS : "+node.udpPort);
+            DatagramSocket dsocket = new DatagramSocket(node.udpPort);
             //http://www.java2s.com/Code/Java/Network-Protocol/ReceiveUDPpockets.htm
             byte[] buffer = new byte[2048];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
@@ -37,12 +63,12 @@ public class UDPBroadcast extends Thread{
             requesterPort=packet.getPort();
 
 
-
             String msg = new String(buffer, 0, packet.getLength());
+            dsocket.close();
             return msg;
 
 
-           // System.out.println(packet.getAddress().getHostName() + ": " + msg);
+            // System.out.println(packet.getAddress().getHostName() + ": " + msg);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -62,7 +88,7 @@ public class UDPBroadcast extends Thread{
             String temp=msg.substring(0,3);
 
             if(temp.equals("DIS"))
-            updateCluster(msg.substring(3));
+                updateCluster(msg.substring(3));
 
             //GETMYNAME/FILENAME
             if(temp.equals("GET"))
@@ -88,7 +114,7 @@ public class UDPBroadcast extends Thread{
                 break;
             }
 
-        responders.add(new Respond(new Node(ip,port,"."),System.currentTimeMillis()-Node.requestTime));
+        responders.add(new Respond(new Node(ip,port,"."),System.currentTimeMillis()-node.requestTime));
 
     }
     private void handleFileRequest(String msg)
@@ -104,7 +130,7 @@ public class UDPBroadcast extends Thread{
                 break;
             }
 
-        File []f=Node.nestFile.listFiles();
+        File []f=node.nestFile.listFiles();
         boolean found=false;
         File answer;
 
@@ -130,7 +156,7 @@ public class UDPBroadcast extends Thread{
             if(receivedFileBefore==false)
                 trick();
 
-            Node.sendUDPSignal(requesterIP.getHostAddress(),requesterPort,"TCP"+Node.ip+"/"+Node.tcpPort);
+            Node.sendUDPSignal(requesterIP.getHostAddress(),requesterPort,"TCP"+node.ip+"/"+node.tcpPort);
         }
 
 
@@ -149,9 +175,10 @@ public class UDPBroadcast extends Thread{
      * Update our cluster with regard to discovery message
      * @param msg
      */
-    public static void updateCluster(String msg) {
+    public  void updateCluster(String msg) {
         // ans=ans+cluster.get(i).getName()+"|"+cluster.get(i).getIp()+"p"+cluster.get(i).getUDPPort()+"\n";asdasdasdasd;
         int temp = 0, temp2 = 0;
+        //    System.out.println("In update cluster, msg = "+msg);
 
         for (int i = 0; i < msg.length(); i++)
             if (msg.charAt(i) == '|') {
@@ -181,8 +208,10 @@ public class UDPBroadcast extends Thread{
 
         boolean currentlyExists=false;
 
-        for (int i=0;i<cluster.size();i++)
-            if(cluster.get(i).getName().equals(nodeName) || cluster.get(i).getName().equals(Node.name))
+
+
+        for (int i=0;i<node.cluster.size();i++)
+            if(node.cluster.get(i).getName().equals(nodeName) || node.name.equals(nodeName))
             {
                 currentlyExists=true;
                 break;
@@ -190,7 +219,7 @@ public class UDPBroadcast extends Thread{
 
 
         if(!currentlyExists)
-            cluster.add(new Node(nodeIp,nodePort,nodeName));
+            node.cluster.add(new Node(nodeIp,nodePort,nodeName));
 
 
         if(m.length()>2)

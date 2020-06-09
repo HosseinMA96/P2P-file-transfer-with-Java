@@ -2,16 +2,18 @@ package Node;
 
 public class GetSender extends Thread {
     private String msg;
+    private Node node;
 
-    public GetSender(String m)
+    public GetSender(String m, Node n)
     {
+        node=n;
         msg=m;
     }
 
     @Override
     public void run()
     {
-        for (int i=0;i<Node.cluster.size();i++)
-            Node.sendUDPSignal(Node.cluster.get(i).getIp(),Node.cluster.get(i).getUDPPort(),msg);
+        for (int i=0;i<node.cluster.size();i++)
+            Node.sendUDPSignal(node.cluster.get(i).getIp(),node.cluster.get(i).getUDPPort(),msg);
     }
 }

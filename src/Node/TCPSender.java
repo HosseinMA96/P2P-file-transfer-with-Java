@@ -12,16 +12,18 @@ public class TCPSender extends Thread {
     private BufferedReader br;
     private String fileName;
     private BufferedOutputStream bos;
+    private Node node;
 
 
-    public TCPSender(Socket s) {
+    public TCPSender(Socket s,Node n) {
         socket = s;
+        node=n;
     }
 
     @Override
     public void run() {
         try {
-            Node.servingCount++;
+            node.servingCount++;
             this.input = socket.getInputStream();
             this.output = socket.getOutputStream();
             br = new BufferedReader(new InputStreamReader(this.input));
@@ -30,7 +32,7 @@ public class TCPSender extends Thread {
 
             fileName = this.br.readLine();
             sendFile(fileName);
-            Node.servingCount--;
+            node.servingCount--;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -38,7 +40,7 @@ public class TCPSender extends Thread {
     }
 
     public void sendFile(String fileName) throws Exception {
-        File[] f = Node.nestFile.listFiles();
+        File[] f = node.nestFile.listFiles();
         boolean found = false;
         File ans = null;
 

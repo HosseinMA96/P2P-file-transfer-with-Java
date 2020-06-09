@@ -15,12 +15,13 @@ public class TCPBroadcast extends Thread {
     private BufferedReader br;
     private PrintWriter bp;
     private DataInputStream dis;
-    public static String destinationIP, requestedFileName;
-    public static int destinationPort;
+    private Node node;
 
-    public TCPBroadcast() {
+
+    public TCPBroadcast(Node n) {
         try {
-            commonSocket = new ServerSocket(Node.tcpPort);
+            node=n;
+            commonSocket = new ServerSocket(node.tcpPort);
         //    identify();
         } catch (Exception e) {
             e.printStackTrace();

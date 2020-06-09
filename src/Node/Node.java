@@ -19,13 +19,13 @@ import java.util.Vector;
 
 
 public class Node {
-    public static int udpPort, tcpPort;
-    public static long requestWaitPeriod = 1000, requestTime;
-    public static int discoveryIntervalMillisec;
-    public static String ip, name;
-    public static Vector<Node> cluster, nodesAlreadyGotFileFrom;
-    public static File nestFile;
-    public static int servingCount = 0;
+    public int udpPort, tcpPort;
+    public long requestWaitPeriod = 1000, requestTime;
+    public int discoveryIntervalMillisec = 1000;
+    public String ip, name;
+    public Vector<Node> cluster = new Vector<Node>(), nodesAlreadyGotFileFrom = new Vector<Node>();
+    public File nestFile;
+    public int servingCount = 0;
     private Timer timer;
 
     private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE";
@@ -40,39 +40,67 @@ public class Node {
     public Node(String ip, int udpPort, String name) {
         this.udpPort = udpPort;
         this.ip = ip;
-        this.cluster = new Vector<Node>();
-        this.nodesAlreadyGotFileFrom = new Vector<Node>();
+        //   this.cluster = new Vector<Node>();
+        // this.nodesAlreadyGotFileFrom = new Vector<Node>();
         this.name = name;
         tcpPort = createRandomTcpPort();
-       // new Timer(delayInMiliSeconds, syncPerformer)).start();
+        // new Timer(delayInMiliSeconds, syncPerformer)).start();
 
 
-        timer=new Timer(discoveryIntervalMillisec, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                DiscoverySender ds=new DiscoverySender(cluster);
-            }
-        });
 
 
-        loop();
+
+        //  loop();
     }
 
 
 
+
+    public Node(String ip, int udpPort, String name, Vector<Node> n) {
+        this.udpPort = udpPort;
+        this.ip = ip;
+        this.cluster = n;
+        //   System.out.println("YIPI "+cluster.get(0).getName());
+        //   System.out.println("YIPI "+cluster.get(1).getName());
+        // System.out.println("\n\n");
+
+        // this.nodesAlreadyGotFileFrom = new Vector<Node>();
+        this.name = name;
+        tcpPort = createRandomTcpPort();
+        // new Timer(delayInMiliSeconds, syncPerformer)).start();
+
+
+
+
+
+
+
+
+
+
+      //  System.out.println("INIT LIST");
+     //   list();
+
+
+        //  loop();
+    }
+
+
     private void loop() {
-        UDPBroadcast udpBroadcast=new UDPBroadcast();
+        DiscoverySender ds=new DiscoverySender(this,discoveryIntervalMillisec);
+        ds.start();
+
+        UDPBroadcast udpBroadcast = new UDPBroadcast(this);
         udpBroadcast.start();
 
-        TCPBroadcast tcpBroadcast=new TCPBroadcast();
+        TCPBroadcast tcpBroadcast = new TCPBroadcast(this);
         tcpBroadcast.start();
 
         while (true) {
             Scanner scanner = new Scanner(System.in);
             String inputString = scanner.nextLine();
+            //  System.out.println(inputString);
             processString(inputString);
-
-            System.out.println(inputString);
 
 
         }
@@ -80,18 +108,29 @@ public class Node {
 
 
     private void processString(String s) {
-        if (s.equals("LIST") || s.equals("list"))
+
+
+        if (s.equals("LIST") || s.equals("list")) {
             list();
+            // System.out.println("LIST");
+            return;
+        }
 
 
-        if (s.substring(0, 3).equals("GET") || s.substring(0, 3).equals("get")) {
+        if (s.length() >= 3 && (s.substring(0, 3).equals("GET") || s.substring(0, 3).equals("get"))) {
+            //  System.out.println("THIS");
             if (searchIfIhaveTheFile(s.substring(3)))
                 JOptionPane.showMessageDialog(null, "You already have this file on your nest path! request was not sent");
 
             else
                 get(s.substring(3));
 
+            return;
+
         }
+
+
+        JOptionPane.showMessageDialog(null, "Invalid command.");
 
     }
 
@@ -147,12 +186,12 @@ public class Node {
 
 
     private void list() {
-        System.out.println("This is node " + this.getName() + " with ip addres " + ip + " udp port " + udpPort);
+        System.out.println("This is node " + this.getName() + " with ip address " + ip + " udp port " + udpPort);
 
         System.out.println("And its cluster is : ");
 
         for (int i = 0; i < cluster.size(); i++)
-            System.out.println("Node " + cluster.get(i).getName() + " ip addres " + cluster.get(i).getIp() + " udp port " + cluster.get(i).getUDPPort());
+            System.out.println("Node " + cluster.get(i).getName() + " ip address " + cluster.get(i).getIp() + " udp port " + cluster.get(i).getUDPPort());
 
         System.out.println("\n");
     }
@@ -169,7 +208,7 @@ public class Node {
 
     private void get(String msg) {
         requestTime = System.currentTimeMillis();
-        GetSender gs = new GetSender(msg);
+        GetSender gs = new GetSender(msg,this);
         gs.start();
     }
 
@@ -252,9 +291,20 @@ public class Node {
     }
 
 
-      public static void main(String[] args) {
-         Node node = new Node("127.0.0.1", 30000, "N1");
-         node.comm();
+    public static void main(String[] args) {
+        Vector<Node> n = new Vector<Node>();
+        n.add(new Node("127.0.0.1", 63000, "N2"));
+        n.add(new Node("127.0.0.1", 34000, "N3"));
+
+
+        //    System.out.println("PRE LOBBY");
+
+        //   for (int i=0;i<n.size();i++)
+        //     System.out.println(n.get(i).getName());
+
+        Node node = new Node("127.0.0.1", 30000, "N1", n);
+        node.loop();
+        //   node.comm();
     }
 }
 

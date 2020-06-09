@@ -17,14 +17,16 @@ public class TCPReceiver extends Thread{
     private BufferedReader br;
     private PrintWriter bp;
     private DataInputStream dis;
+    private Node node;
 
 
 
-    public TCPReceiver(String ip, int port, String fName)
+    public TCPReceiver(String ip, int port, String fName, Node n)
     {
         destinationIP=ip;
         destinationPort=port;
         requestedFileName=fName;
+        node=n;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class TCPReceiver extends Thread{
         DataInputStream dis = new DataInputStream(bis);
 
 
-        File file = new File(Node.nestFile.getAbsolutePath() + "\\" + fileName);
+        File file = new File(node.nestFile.getAbsolutePath() + "\\" + fileName);
 
 
         long fileLength = dis.readLong();
