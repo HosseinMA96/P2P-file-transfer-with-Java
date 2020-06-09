@@ -7,37 +7,31 @@ import java.net.InetAddress;
 import java.util.Vector;
 
 
-
-public class UDPBroadcast extends Thread{
+public class UDPBroadcast extends Thread {
     private int requesterPort;
     private InetAddress requesterIP;
-    public  Vector<Respond>responders=new Vector<>();
-    private Vector<Node>nodesAlreadyGotFileFrom;
+    public static Vector<Respond> responders = new Vector<>();
+    private Vector<Node> nodesAlreadyGotFileFrom;
     private Node node;
 
-    public UDPBroadcast(Node n)
-    {
-        node=n;
-        nodesAlreadyGotFileFrom=new Vector<Node>();
+    public UDPBroadcast(Node n) {
+        node = n;
+        nodesAlreadyGotFileFrom = new Vector<Node>();
     }
 
     @Override
-    public void run()
-    {
-        while(true)
-        {
-            String s=receiveUdpSignal();
-       //     System.out.println("PAST IN RECEIVE, HERE IS THE MESSAGE : ");
-        //    System.out.println(s);
-         //   System.out.println("\n\n");
+    public void run() {
+        while (true) {
+            String s = receiveUdpSignal();
+            //     System.out.println("PAST IN RECEIVE, HERE IS THE MESSAGE : ");
+            //    System.out.println(s);
+            //   System.out.println("\n\n");
 
             multiplexUDPpacket(s);
             //     System.out.println("PAST IN RECEIVE");
             try {
                 //      sleep(10);
-            }
-            catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -59,8 +53,8 @@ public class UDPBroadcast extends Thread{
             byte[] buffer = new byte[2048];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             dsocket.receive(packet);
-            requesterIP=packet.getAddress();
-            requesterPort=packet.getPort();
+            requesterIP = packet.getAddress();
+            requesterPort = packet.getPort();
 
 
             String msg = new String(buffer, 0, packet.getLength());
@@ -79,103 +73,127 @@ public class UDPBroadcast extends Thread{
 
     /**
      * Here we guide a received string depending on being a discovery message or GET message?
+     *
      * @param msg
      */
-    void multiplexUDPpacket(String msg)
-    {
-        if(msg.length()>=3)
-        {
-            String temp=msg.substring(0,3);
+    void multiplexUDPpacket(String msg) {
+        if (msg.length() >= 3) {
+            String temp = msg.substring(0, 3);
 
-            if(temp.equals("DIS"))
+            if (temp.equals("DIS"))
                 updateCluster(msg.substring(3));
 
             //GETMYNAME/FILENAME
-            if(temp.equals("GET"))
+            if (temp.equals("GET"))
                 handleFileRequest(msg.substring(3));
 
             //TCPip/port
-            if(temp.equals("TCP"))
+            if (temp.equals("TCP"))
                 registerResponder(msg);
 
 
         }
     }
-    private void registerResponder(String responder)
-    {
-        String ip="";
-        int port=0;
 
-        for (int i=0;i<responder.length();i++)
-            if(responder.charAt(i)=='/')
-            {
-                ip=responder.substring(3,i);
-                Integer.parseInt(responder.substring(i+1));
+    private void registerResponder(String responder) {
+        String ip = "", fName = "";
+        int port = 0, temp = 0;
+
+        for (int i = 0; i < responder.length(); i++)
+            if (responder.charAt(i) == '/') {
+                ip = responder.substring(3, i);
+                temp = i;
                 break;
             }
 
-        responders.add(new Respond(new Node(ip,port,"."),System.currentTimeMillis()-node.requestTime));
+
+        for (int i = temp + 1; i < responder.length(); i++)
+            if (responder.charAt(i) == '/') {
+                port = Integer.parseInt(responder.substring(temp + 1, i));
+                fName = responder.substring(i + 1);
+                temp = i;
+                break;
+            }
+
+        System.out.println("REGISTERED A RESPONDER " + ip + " " + port);
+
+        if (fName.equals(node.lastFileRequested) && System.currentTimeMillis()-node.requestTime<=node.requestWaitPeriod)
+            responders.add(new Respond(new Node(ip, port, "."), System.currentTimeMillis() - node.requestTime));
 
     }
-    private void handleFileRequest(String msg)
-    {
-        //First find the name of sender
-        String requester="",fileName="";
 
-        for (int i=0;i<msg.length();i++)
-            if(msg.charAt(i)=='/')
-            {
-                requester=msg.substring(0,i);
-                fileName=msg.substring(i+1);
+    private void handleFileRequest(String msg) {
+        //MSG = fileName/IPpudpPort
+        System.out.println("RECEIVED GET REQUEST :: " + msg);
+        String requesterIp = "";
+        int requesterPort = 0, temp = 0;
+
+        //First find the name of sender
+        String requester = "", fileName = "";
+
+        for (int i = 0; i < msg.length(); i++)
+            if (msg.charAt(i) == '/') {
+
+                fileName = msg.substring(0, i);
+                temp = i;
                 break;
             }
 
-        File []f=node.nestFile.listFiles();
-        boolean found=false;
+        for (int i = 0; i < msg.length(); i++)
+            if (msg.charAt(i) == '#') {
+
+                requesterIp = msg.substring(temp + 1, i);
+                requesterPort = Integer.parseInt(msg.substring(i + 1));
+
+                break;
+            }
+        System.out.println("FNAME : " + fileName + " IP " + requesterIp + " port " + requesterPort);
+
+        File[] f = node.nestFile.listFiles();
+        boolean found = false;
         File answer;
 
-        for (int i=0;i<f.length;i++)
-            if(f[i].getName().equals(fileName))
-            {
-                found=false;
-                answer=f[i];
+        for (int i = 0; i < f.length; i++)
+            if (f[i].getName().equals(fileName)) {
+                found = true;
+                answer = f[i];
                 break;
             }
 
-        if(found) {
-            boolean receivedFileBefore=false;
+        if (found) {
+            boolean receivedFileBefore = false;
 
-            for(int i=0;i<nodesAlreadyGotFileFrom.size();i++)
-                if(nodesAlreadyGotFileFrom.get(i).getName().equals(requester))
-                {
-                    receivedFileBefore=true;
+            for (int i = 0; i < nodesAlreadyGotFileFrom.size(); i++)
+                if (nodesAlreadyGotFileFrom.get(i).getName().equals(requester)) {
+                    receivedFileBefore = true;
                     break;
                 }
 
 
-            if(receivedFileBefore==false)
+            if (receivedFileBefore == false)
                 trick();
 
-            Node.sendUDPSignal(requesterIP.getHostAddress(),requesterPort,"TCP"+node.ip+"/"+node.tcpPort);
+            Node.sendUDPSignal(requesterIP.getHostAddress(), requesterPort, "TCP" + node.ip + "/" + node.tcpPort + "/" + fileName);
         }
 
-
+        if (found)
+            System.out.println("I HAVE THE FILE WITH NAME " + fileName);
     }
 
     /**
      * Piggyback
      */
-    private void trick()
-    {
+    private void trick() {
 
     }
 
 
     /**
      * Update our cluster with regard to discovery message
+     *
      * @param msg
      */
-    public  void updateCluster(String msg) {
+    public void updateCluster(String msg) {
         // ans=ans+cluster.get(i).getName()+"|"+cluster.get(i).getIp()+"p"+cluster.get(i).getUDPPort()+"\n";asdasdasdasd;
         int temp = 0, temp2 = 0;
         //    System.out.println("In update cluster, msg = "+msg);
@@ -206,23 +224,21 @@ public class UDPBroadcast extends Thread{
 
         String m = msg.substring(temp + 1);
 
-        boolean currentlyExists=false;
+        boolean currentlyExists = false;
 
 
-
-        for (int i=0;i<node.cluster.size();i++)
-            if(node.cluster.get(i).getName().equals(nodeName) || node.name.equals(nodeName))
-            {
-                currentlyExists=true;
+        for (int i = 0; i < node.cluster.size(); i++)
+            if (node.cluster.get(i).getName().equals(nodeName) || node.name.equals(nodeName)) {
+                currentlyExists = true;
                 break;
             }
 
 
-        if(!currentlyExists)
-            node.cluster.add(new Node(nodeIp,nodePort,nodeName));
+        if (!currentlyExists)
+            node.cluster.add(new Node(nodeIp, nodePort, nodeName));
 
 
-        if(m.length()>2)
+        if (m.length() > 2)
             updateCluster(m);
 
     }

@@ -20,15 +20,16 @@ import java.util.Vector;
 
 public class Node {
     public int udpPort, tcpPort;
-    public long requestWaitPeriod = 1000, requestTime;
-    public int discoveryIntervalMillisec = 1000;
-    public String ip, name;
+    public long requestWaitPeriod = 1000, requestTime=-1;
+    public int discoveryIntervalMillisec = 15000;
+    public String ip, name,lastFileRequested;
+    private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE1";
     public Vector<Node> cluster = new Vector<Node>(), nodesAlreadyGotFileFrom = new Vector<Node>();
-    public File nestFile;
+    public File nestFile=new File(nestPath);
     public int servingCount = 0;
     private Timer timer;
 
-    private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE";
+
 
     /**
      * Constructor for this class
@@ -40,17 +41,11 @@ public class Node {
     public Node(String ip, int udpPort, String name) {
         this.udpPort = udpPort;
         this.ip = ip;
-        //   this.cluster = new Vector<Node>();
-        // this.nodesAlreadyGotFileFrom = new Vector<Node>();
         this.name = name;
         tcpPort = createRandomTcpPort();
-        // new Timer(delayInMiliSeconds, syncPerformer)).start();
 
 
 
-
-
-        //  loop();
     }
 
 
@@ -87,6 +82,7 @@ public class Node {
 
 
     private void loop() {
+        System.out.println("MY TCP PORT IS "+tcpPort);
         DiscoverySender ds=new DiscoverySender(this,discoveryIntervalMillisec);
         ds.start();
 
@@ -117,13 +113,13 @@ public class Node {
         }
 
 
-        if (s.length() >= 3 && (s.substring(0, 3).equals("GET") || s.substring(0, 3).equals("get"))) {
+        if (s.length() >= 3 && (s.substring(0, 3).equals("GET"))) {
             //  System.out.println("THIS");
             if (searchIfIhaveTheFile(s.substring(3)))
                 JOptionPane.showMessageDialog(null, "You already have this file on your nest path! request was not sent");
 
             else
-                get(s.substring(3));
+                get(s);
 
             return;
 
@@ -206,9 +202,13 @@ public class Node {
             JOptionPane.showMessageDialog((Component) null, "Your base directory does not exist!", "Error", 1);
     }
 
+    //MSG = GETfileName/IP#udpPort
     private void get(String msg) {
         requestTime = System.currentTimeMillis();
-        GetSender gs = new GetSender(msg,this);
+        lastFileRequested=msg.substring(3);
+        String added=msg;
+        added=added+"/"+ip+"#"+udpPort;
+        GetSender gs = new GetSender(added,this);
         gs.start();
     }
 
@@ -294,7 +294,7 @@ public class Node {
     public static void main(String[] args) {
         Vector<Node> n = new Vector<Node>();
         n.add(new Node("127.0.0.1", 63000, "N2"));
-        n.add(new Node("127.0.0.1", 34000, "N3"));
+        n.add(new Node("127.0.0.1", 59000, "N3"));
 
 
         //    System.out.println("PRE LOBBY");

@@ -33,7 +33,10 @@ public class TCPBroadcast extends Thread {
     public void run() {
         while (true) {
             try {
-                Socket socketReader1 = commonSocket.accept();
+                //TIME STUFF
+                Socket receiveSocket = commonSocket.accept();
+                TCPSender tcpSender=new TCPSender(receiveSocket,node);
+                tcpSender.start();
 
             } catch (Exception e) {
                 e.printStackTrace();

@@ -3,6 +3,7 @@ package Node;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Vector;
 
 public class TCPReceiver extends Thread{
     private Socket socket;
@@ -21,7 +22,7 @@ public class TCPReceiver extends Thread{
 
 
 
-    public TCPReceiver(String ip, int port, String fName, Node n)
+    public TCPReceiver(String ip, int port, String fName, Node n, Vector<Respond> r)
     {
         destinationIP=ip;
         destinationPort=port;
