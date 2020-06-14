@@ -11,7 +11,7 @@ public class UDPBroadcast extends Thread {
     private int requesterPort;
     private InetAddress requesterIP;
     public static Vector<Respond> responders = new Vector<>();
-    private Vector<Node> nodesAlreadyGotFileFrom;
+    public static Vector<Node> nodesAlreadyGotFileFrom = new Vector<Node>();
     private Node node;
 
     public UDPBroadcast(Node n) {
@@ -88,7 +88,7 @@ public class UDPBroadcast extends Thread {
                 handleFileRequest(msg.substring(3));
 
             //TCPip/port
-            if (temp.equals("TCP"))
+            if (temp.equals("TCP") && Node.responded)
                 registerResponder(msg);
 
 
@@ -97,7 +97,15 @@ public class UDPBroadcast extends Thread {
 
     private void registerResponder(String responder) {
         String ip = "", fName = "";
-        int port = 0, temp = 0;
+        int port = 0, temp = 0,ir=0;
+
+        for (int i = 0; i < responder.length(); i++)
+            if (responder.charAt(i) == '%') {
+                ir=i;
+                break;
+            }
+
+
 
         for (int i = 0; i < responder.length(); i++)
             if (responder.charAt(i) == '/') {
@@ -110,20 +118,34 @@ public class UDPBroadcast extends Thread {
         for (int i = temp + 1; i < responder.length(); i++)
             if (responder.charAt(i) == '/') {
                 port = Integer.parseInt(responder.substring(temp + 1, i));
-                fName = responder.substring(i + 1);
+                fName = responder.substring(i + 1,ir);
                 temp = i;
                 break;
             }
 
-        System.out.println("REGISTERED A RESPONDER " + ip + " " + port);
+        String name="";
 
-        if (fName.equals(node.lastFileRequested) && System.currentTimeMillis()-node.requestTime<=node.requestWaitPeriod)
-            responders.add(new Respond(new Node(ip, port, "."), System.currentTimeMillis() - node.requestTime));
+        for (int i = temp + 1; i < responder.length(); i++)
+            if (responder.charAt(i) == '%') {
+                name=responder.substring(i+1);
+                break;
+            }
+
+
+        System.out.println("REGISTERED A RESPONDER " + ip + " " + port);
+        System.out.println(fName);
+        System.out.println(System.currentTimeMillis() - node.requestTime );
+        System.out.println(node.requestWaitPeriod);
+        System.out.println();
+
+        //If the request was within
+        if (fName.equals(node.lastFileRequested) && System.currentTimeMillis() - node.requestTime <= node.requestWaitPeriod)
+            responders.add(new Respond(new Node(ip, port, name), System.currentTimeMillis() - node.requestTime));
 
     }
 
     private void handleFileRequest(String msg) {
-        //MSG = fileName/IPpudpPort
+        //MSG = fileName/IP#pudpPort%Name
         System.out.println("RECEIVED GET REQUEST :: " + msg);
         String requesterIp = "";
         int requesterPort = 0, temp = 0;
@@ -139,14 +161,28 @@ public class UDPBroadcast extends Thread {
                 break;
             }
 
+        int ir=0;
+
+        for (int i = 0; i < msg.length(); i++)
+            if (msg.charAt(i) == '%') {
+                ir=i;
+                requester = msg.substring(i + 1);
+
+                break;
+            }
+
         for (int i = 0; i < msg.length(); i++)
             if (msg.charAt(i) == '#') {
 
                 requesterIp = msg.substring(temp + 1, i);
-                requesterPort = Integer.parseInt(msg.substring(i + 1));
+                requesterPort = Integer.parseInt(msg.substring(i + 1,ir));
 
                 break;
             }
+
+
+
+
         System.out.println("FNAME : " + fileName + " IP " + requesterIp + " port " + requesterPort);
 
         File[] f = node.nestFile.listFiles();
@@ -160,6 +196,7 @@ public class UDPBroadcast extends Thread {
                 break;
             }
 
+        System.out.println(requester);
         if (found) {
             boolean receivedFileBefore = false;
 
@@ -173,7 +210,7 @@ public class UDPBroadcast extends Thread {
             if (receivedFileBefore == false)
                 trick();
 
-            Node.sendUDPSignal(requesterIP.getHostAddress(), requesterPort, "TCP" + node.ip + "/" + node.tcpPort + "/" + fileName);
+            Node.sendUDPSignal(requesterIP.getHostAddress(), requesterPort, "TCP" + node.ip + "/" + node.tcpPort + "/" + fileName+"%"+node.name);
         }
 
         if (found)
@@ -184,7 +221,11 @@ public class UDPBroadcast extends Thread {
      * Piggyback
      */
     private void trick() {
-
+        try {
+            sleep(100);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 

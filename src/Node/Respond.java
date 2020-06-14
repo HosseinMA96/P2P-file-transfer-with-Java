@@ -1,6 +1,6 @@
 package Node;
 
-public class Respond implements Comparable {
+public class Respond   {
     private Node node;
     private long responseMilliSeconds;
 
@@ -17,12 +17,5 @@ public class Respond implements Comparable {
         return responseMilliSeconds;
     }
 
-    @Override
-    public int compareTo(Object o) {
-        if(this.responseMilliSeconds>((Respond)o).getResponseMilliSeconds())
-            return 1;
 
-        else
-            return -1;
-    }
 }

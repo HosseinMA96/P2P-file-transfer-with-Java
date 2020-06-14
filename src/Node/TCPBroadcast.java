@@ -16,13 +16,14 @@ public class TCPBroadcast extends Thread {
     private PrintWriter bp;
     private DataInputStream dis;
     private Node node;
+    public static int servingClients = 0;
 
 
     public TCPBroadcast(Node n) {
         try {
-            node=n;
+            node = n;
             commonSocket = new ServerSocket(node.tcpPort);
-        //    identify();
+            //    identify();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -35,8 +36,12 @@ public class TCPBroadcast extends Thread {
             try {
                 //TIME STUFF
                 Socket receiveSocket = commonSocket.accept();
-                TCPSender tcpSender=new TCPSender(receiveSocket,node);
-                tcpSender.start();
+
+                if (servingClients < Node.servingLimit) {
+                    TCPSender tcpSender = new TCPSender(receiveSocket, node);
+                    tcpSender.start();
+                    servingClients++;
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();

@@ -20,13 +20,14 @@ import java.util.Vector;
 
 public class Node {
     public int udpPort, tcpPort;
-    public long requestWaitPeriod = 1000, requestTime=-1;
+    public static long requestWaitPeriod = 5000, requestTime=-1;
     public int discoveryIntervalMillisec = 15000;
     public String ip, name,lastFileRequested;
     private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE1";
     public Vector<Node> cluster = new Vector<Node>(), nodesAlreadyGotFileFrom = new Vector<Node>();
     public File nestFile=new File(nestPath);
-    public int servingCount = 0;
+    public static int servingLimit = 1;
+    public static boolean responded=false;
     private Timer timer;
 
 
@@ -116,7 +117,7 @@ public class Node {
         if (s.length() >= 3 && (s.substring(0, 3).equals("GET"))) {
             //  System.out.println("THIS");
             if (searchIfIhaveTheFile(s.substring(3)))
-                JOptionPane.showMessageDialog(null, "You already have this file on your nest path! request was not sent");
+                System.out.println("You already have this file on your nest path! request was not sent\n\n");
 
             else
                 get(s);
@@ -126,7 +127,7 @@ public class Node {
         }
 
 
-        JOptionPane.showMessageDialog(null, "Invalid command.");
+        System.out.println("Invalid command!\n\n");
 
     }
 
@@ -204,12 +205,23 @@ public class Node {
 
     //MSG = GETfileName/IP#udpPort
     private void get(String msg) {
+        responded=true;
         requestTime = System.currentTimeMillis();
         lastFileRequested=msg.substring(3);
         String added=msg;
-        added=added+"/"+ip+"#"+udpPort;
+        added=added+"/"+ip+"#"+udpPort+"%"+name;
         GetSender gs = new GetSender(added,this);
         gs.start();
+        TCPReceiver tcpReceiver=new TCPReceiver(msg.substring(3),this,requestTime);
+        tcpReceiver.start();
+
+        try {
+            tcpReceiver.join();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public void deleteFile(File f) {
@@ -293,8 +305,8 @@ public class Node {
 
     public static void main(String[] args) {
         Vector<Node> n = new Vector<Node>();
-        n.add(new Node("127.0.0.1", 63000, "N2"));
-        n.add(new Node("127.0.0.1", 59000, "N3"));
+        n.add(new Node("127.0.0.1", 65000, "N2"));
+        n.add(new Node("127.0.0.1", 62000, "N3"));
 
 
         //    System.out.println("PRE LOBBY");

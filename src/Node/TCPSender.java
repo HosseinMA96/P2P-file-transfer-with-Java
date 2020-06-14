@@ -10,7 +10,8 @@ public class TCPSender extends Thread {
     private InputStream input;
     private DataOutputStream dos;
     private BufferedReader br;
-    private String fileName;
+    private String fileName,hostName;
+    private PrintWriter bp;
     private BufferedOutputStream bos;
     private Node node;
 
@@ -23,16 +24,20 @@ public class TCPSender extends Thread {
     @Override
     public void run() {
         try {
-            node.servingCount++;
+
             this.input = socket.getInputStream();
             this.output = socket.getOutputStream();
             br = new BufferedReader(new InputStreamReader(this.input));
             bos = new BufferedOutputStream(this.output);
             dos = new DataOutputStream(bos);
+            bp = new PrintWriter(new OutputStreamWriter(this.output));
 
             fileName = this.br.readLine();
+            bp.println(node.getName());
+            bp.flush();
+
             sendFile(fileName);
-            node.servingCount--;
+            TCPBroadcast.servingClients--;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -53,7 +58,7 @@ public class TCPSender extends Thread {
 
 
         if (!found) {
-            JOptionPane.showMessageDialog(null, "Error, a file which was intended to be sent was deleted!");
+            System.out.println("Error, a file which was intended to be sent was deleted!");
             return;
         }
 
