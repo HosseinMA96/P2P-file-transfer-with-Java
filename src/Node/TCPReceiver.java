@@ -1,5 +1,7 @@
 package Node;
 
+import com.sun.istack.internal.NotNull;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -12,7 +14,7 @@ public class TCPReceiver extends Thread {
     private OutputStream output;
     private DataOutputStream dos;
     private ServerSocket commonSocket;
-    private String command,hostName;
+    private String command, hostName;
     private InputStream input;
     private BufferedReader br;
     private PrintWriter bp;
@@ -32,8 +34,15 @@ public class TCPReceiver extends Thread {
         while (System.currentTimeMillis() - time <= Node.requestWaitPeriod) ;
 
         if (UDPBroadcast.responders.size() > 0) {
+            Node.unfinishedFiles.add(requestedFileName);
             getFile();
             System.out.println("Successfully received file \n\n");
+
+            for (int i = 0; i < Node.unfinishedFiles.size(); i++)
+                if (Node.unfinishedFiles.get(i).equals(requestedFileName)) {
+                    Node.unfinishedFiles.remove(i);
+                    break;
+                }
         } else {
             System.out.println("No node responded \n\n");
             Node.responded = false;
@@ -87,8 +96,12 @@ public class TCPReceiver extends Thread {
                 break;
             }
 
-        if(!exist)
-            UDPBroadcast.nodesAlreadyGotFileFrom.add(new Node(destinationIP,destinationPort,hostName));
+        synchronized (this) {
+            if (!exist) {
+                Node dn = new Node(destinationIP, destinationPort, hostName);
+                UDPBroadcast.nodesAlreadyGotFileFrom.add(dn);
+            }
+        }
         System.out.println("I'm going to establish a TCP connection with ip " + destinationIP + " and port " + destinationPort + " to get this file.\n\n");
 
     }
@@ -99,9 +112,8 @@ public class TCPReceiver extends Thread {
 
         try {
             hostName = this.br.readLine();
-        }
-        catch (Exception e)
-        {
+            System.out.println("HOSTNAME IS " + hostName);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

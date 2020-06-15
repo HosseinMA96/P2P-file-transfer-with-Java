@@ -37,6 +37,7 @@ public class TCPSender extends Thread {
             bp.flush();
 
             sendFile(fileName);
+            socket.close();
             TCPBroadcast.servingClients--;
 
         } catch (Exception e) {

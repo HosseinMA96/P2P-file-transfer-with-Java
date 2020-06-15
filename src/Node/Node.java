@@ -20,14 +20,15 @@ import java.util.Vector;
 
 public class Node {
     public int udpPort, tcpPort;
-    public static long requestWaitPeriod = 5000, requestTime=-1;
+    public static long requestWaitPeriod = 2000, requestTime=-1;
     public int discoveryIntervalMillisec = 15000;
     public String ip, name,lastFileRequested;
     private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE1";
-    public Vector<Node> cluster = new Vector<Node>(), nodesAlreadyGotFileFrom = new Vector<Node>();
+    public Vector<Node> cluster = new Vector<Node>();
     public File nestFile=new File(nestPath);
-    public static int servingLimit = 1;
+    public static int servingLimit = 2;
     public static boolean responded=false;
+    public static Vector<String> unfinishedFiles=new Vector<>();
     private Timer timer;
 
 
@@ -60,7 +61,7 @@ public class Node {
         //   System.out.println("YIPI "+cluster.get(1).getName());
         // System.out.println("\n\n");
 
-        // this.nodesAlreadyGotFileFrom = new Vector<Node>();
+
         this.name = name;
         tcpPort = createRandomTcpPort();
         // new Timer(delayInMiliSeconds, syncPerformer)).start();
@@ -305,8 +306,8 @@ public class Node {
 
     public static void main(String[] args) {
         Vector<Node> n = new Vector<Node>();
-        n.add(new Node("127.0.0.1", 65000, "N2"));
-        n.add(new Node("127.0.0.1", 62000, "N3"));
+        n.add(new Node("127.0.0.1", 62001, "N2"));
+        n.add(new Node("127.0.0.1", 63001, "N3"));
 
 
         //    System.out.println("PRE LOBBY");

@@ -1,5 +1,7 @@
 package Node;
 
+import com.sun.istack.internal.NotNull;
+
 import java.io.File;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -96,6 +98,7 @@ public class UDPBroadcast extends Thread {
     }
 
     private void registerResponder(String responder) {
+        //System.out.println("RESP : "+responder);
         String ip = "", fName = "";
         int port = 0, temp = 0,ir=0;
 
@@ -196,25 +199,51 @@ public class UDPBroadcast extends Thread {
                 break;
             }
 
+        for (int i=0;i<Node.unfinishedFiles.size();i++)
+            if(Node.unfinishedFiles.get(i).equals(fileName))
+            {
+                found=false;
+                break;
+            }
+
         System.out.println(requester);
         if (found) {
             boolean receivedFileBefore = false;
 
-            for (int i = 0; i < nodesAlreadyGotFileFrom.size(); i++)
-                if (nodesAlreadyGotFileFrom.get(i).getName().equals(requester)) {
-                    receivedFileBefore = true;
-                    break;
-                }
+            System.out.println("CONTROLL");
+            System.out.println(requester);
+
+            if (nodesAlreadyGotFileFrom.size() > 0) {
+
+                System.out.println(nodesAlreadyGotFileFrom.size());
+                System.out.println(nodesAlreadyGotFileFrom.get(0).getName());
+                System.out.println(nodesAlreadyGotFileFrom.get(0).getIp());
+                System.out.println(nodesAlreadyGotFileFrom.get(0).udpPort);
 
 
-            if (receivedFileBefore == false)
-                trick();
+            } else
+                System.out.println(0);
 
-            Node.sendUDPSignal(requesterIP.getHostAddress(), requesterPort, "TCP" + node.ip + "/" + node.tcpPort + "/" + fileName+"%"+node.name);
+
+            System.out.println();
+
+            synchronized (this){
+                for (int i = 0; i < nodesAlreadyGotFileFrom.size(); i++)
+                    if (nodesAlreadyGotFileFrom.get(i).getName().equals(requester)) {
+                        receivedFileBefore = true;
+                        break;
+                    }
+
+
+                if (receivedFileBefore == false)
+                    trick();
+
+                Node.sendUDPSignal(requesterIP.getHostAddress(), requesterPort, "TCP" + node.ip + "/" + node.tcpPort + "/" + fileName + "%" + node.name);
+            }
+
+            if (found)
+                System.out.println("I HAVE THE FILE WITH NAME " + fileName);
         }
-
-        if (found)
-            System.out.println("I HAVE THE FILE WITH NAME " + fileName);
     }
 
     /**
