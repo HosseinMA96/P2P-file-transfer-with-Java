@@ -18,7 +18,6 @@ public class UDPBroadcast extends Thread {
 
     public UDPBroadcast(Node n) {
         node = n;
-        nodesAlreadyGotFileFrom = new Vector<Node>();
     }
 
     @Override
@@ -216,7 +215,7 @@ public class UDPBroadcast extends Thread {
             if (nodesAlreadyGotFileFrom.size() > 0) {
 
                 System.out.println(nodesAlreadyGotFileFrom.size());
-                System.out.println(nodesAlreadyGotFileFrom.get(0).getName());
+                System.out.println(nodesAlreadyGotFileFrom.get(0).name);
                 System.out.println(nodesAlreadyGotFileFrom.get(0).getIp());
                 System.out.println(nodesAlreadyGotFileFrom.get(0).udpPort);
 
@@ -229,7 +228,7 @@ public class UDPBroadcast extends Thread {
 
             synchronized (this){
                 for (int i = 0; i < nodesAlreadyGotFileFrom.size(); i++)
-                    if (nodesAlreadyGotFileFrom.get(i).getName().equals(requester)) {
+                    if (nodesAlreadyGotFileFrom.get(i).name.equals(requester)) {
                         receivedFileBefore = true;
                         break;
                     }

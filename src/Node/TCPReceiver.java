@@ -62,6 +62,10 @@ public class TCPReceiver extends Thread {
             br = new BufferedReader(new InputStreamReader(this.input));
             identify();
             requestFile(requestedFileName);
+            bp.close();
+            br.close();
+            input.close();
+            output.close();
             socket.close();
 
         } catch (Exception e) {
@@ -96,12 +100,20 @@ public class TCPReceiver extends Thread {
                 break;
             }
 
-        synchronized (this) {
-            if (!exist) {
-                Node dn = new Node(destinationIP, destinationPort, hostName);
-                UDPBroadcast.nodesAlreadyGotFileFrom.add(dn);
-            }
-        }
+//        synchronized (this) {
+//            if (!exist) {
+//                Node dn = new Node(destinationIP, destinationPort, hostName);
+//
+//
+//                UDPBroadcast.nodesAlreadyGotFileFrom.add(dn);
+//                System.out.println("DECL::");
+//                for (int i = 0; i < UDPBroadcast.nodesAlreadyGotFileFrom.size(); i++)
+//                    System.out.println(UDPBroadcast.nodesAlreadyGotFileFrom.get(i).name);
+//
+//
+//                System.out.println("SIZE = " + UDPBroadcast.nodesAlreadyGotFileFrom.size() + "\n\n");
+//            }
+//        }
         System.out.println("I'm going to establish a TCP connection with ip " + destinationIP + " and port " + destinationPort + " to get this file.\n\n");
 
     }
@@ -113,6 +125,12 @@ public class TCPReceiver extends Thread {
         try {
             hostName = this.br.readLine();
             System.out.println("HOSTNAME IS " + hostName);
+
+
+            Node dn = new Node(destinationIP, destinationPort, hostName);
+            UDPBroadcast.nodesAlreadyGotFileFrom.add(dn);
+
+
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -306,8 +306,8 @@ public class Node {
 
     public static void main(String[] args) {
         Vector<Node> n = new Vector<Node>();
-        n.add(new Node("127.0.0.1", 62001, "N2"));
-        n.add(new Node("127.0.0.1", 63001, "N3"));
+        n.add(new Node("127.0.0.1", 62000, "N2"));
+        n.add(new Node("127.0.0.1", 63000, "N3"));
 
 
         //    System.out.println("PRE LOBBY");

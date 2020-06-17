@@ -10,15 +10,15 @@ public class TCPSender extends Thread {
     private InputStream input;
     private DataOutputStream dos;
     private BufferedReader br;
-    private String fileName,hostName;
+    private String fileName, hostName;
     private PrintWriter bp;
     private BufferedOutputStream bos;
     private Node node;
 
 
-    public TCPSender(Socket s,Node n) {
+    public TCPSender(Socket s, Node n) {
         socket = s;
-        node=n;
+        node = n;
     }
 
     @Override
@@ -37,6 +37,12 @@ public class TCPSender extends Thread {
             bp.flush();
 
             sendFile(fileName);
+
+            bp.close();
+            br.close();
+            input.close();
+            output.close();
+            socket.close();
             socket.close();
             TCPBroadcast.servingClients--;
 
