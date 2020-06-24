@@ -1,3 +1,8 @@
+/**
+ * When the users requests for a file, when request wait period is finished, this class contacts the responder whose response delay is minimum
+ * And establishes a tcp connection with it and receives the requested file.
+ */
+
 package Node;
 
 import com.sun.istack.internal.NotNull;
@@ -21,8 +26,16 @@ public class TCPReceiver extends Thread {
     private DataInputStream dis;
     private Node node;
     private long time;
+    private boolean serverBusy=false;
 
 
+    /**
+     * Constructor of this class
+     *
+     * @param fName
+     * @param n
+     * @param t
+     */
     public TCPReceiver(String fName, Node n, long t) {
         requestedFileName = fName;
         node = n;
@@ -36,7 +49,9 @@ public class TCPReceiver extends Thread {
         if (UDPBroadcast.responders.size() > 0) {
             Node.unfinishedFiles.add(requestedFileName);
             getFile();
-            System.out.println("Successfully received file \n\n");
+
+            if(receivedFile(requestedFileName))
+                System.out.println("Successfully received file \n\n");
 
             for (int i = 0; i < Node.unfinishedFiles.size(); i++)
                 if (Node.unfinishedFiles.get(i).equals(requestedFileName)) {
@@ -52,6 +67,9 @@ public class TCPReceiver extends Thread {
         UDPBroadcast.responders = new Vector<>();
     }
 
+    /**
+     * A method to get the intended file
+     */
     void getFile() {
         try {
             findBestCandid();
@@ -61,7 +79,10 @@ public class TCPReceiver extends Thread {
             bp = new PrintWriter(new OutputStreamWriter(this.output));
             br = new BufferedReader(new InputStreamReader(this.input));
             identify();
-            requestFile(requestedFileName);
+
+            if(!serverBusy)
+                requestFile(requestedFileName);
+
             bp.close();
             br.close();
             input.close();
@@ -76,6 +97,9 @@ public class TCPReceiver extends Thread {
     }
 
 
+    /**
+     * A method to find the responder with the least response delay
+     */
     void findBestCandid() {
         boolean first = true;
         long m = 0;
@@ -100,30 +124,26 @@ public class TCPReceiver extends Thread {
                 break;
             }
 
-//        synchronized (this) {
-//            if (!exist) {
-//                Node dn = new Node(destinationIP, destinationPort, hostName);
-//
-//
-//                UDPBroadcast.nodesAlreadyGotFileFrom.add(dn);
-//                System.out.println("DECL::");
-//                for (int i = 0; i < UDPBroadcast.nodesAlreadyGotFileFrom.size(); i++)
-//                    System.out.println(UDPBroadcast.nodesAlreadyGotFileFrom.get(i).name);
-//
-//
-//                System.out.println("SIZE = " + UDPBroadcast.nodesAlreadyGotFileFrom.size() + "\n\n");
-//            }
-//        }
         System.out.println("I'm going to establish a TCP connection with ip " + destinationIP + " and port " + destinationPort + " to get this file.\n\n");
 
     }
 
+    /**
+     * A function to give your requested filename to yhe server and receive the hostName so that you can add it to nodesAlreadyGotFileFrom vector
+     */
     private void identify() {
         bp.println(requestedFileName);
         bp.flush();
 
         try {
             hostName = this.br.readLine();
+
+            if(hostName.equals("BUSY"))
+            {
+                System.out.println("SERVER IS CURRENTLY BUSY. TRY AGAIN LATER\n\n");
+                serverBusy=true;
+                return;
+            }
             System.out.println("HOSTNAME IS " + hostName);
 
 
@@ -136,6 +156,12 @@ public class TCPReceiver extends Thread {
         }
     }
 
+    /**
+     * a Method to receive the needed file
+     *
+     * @param fileName
+     * @throws Exception
+     */
     private void requestFile(String fileName) throws Exception {
         BufferedInputStream bis = new BufferedInputStream(this.input);
         DataInputStream dis = new DataInputStream(bis);
@@ -158,6 +184,17 @@ public class TCPReceiver extends Thread {
 
 
         dis.close();
+    }
+
+
+    boolean receivedFile(String fname){
+        File []f=node.nestFile.listFiles();
+
+        for (int i=0;i<f.length;i++)
+            if(f[i].getName().equals(fname))
+                return true;
+
+        return false;
     }
 
 

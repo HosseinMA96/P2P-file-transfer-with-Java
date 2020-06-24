@@ -1,3 +1,7 @@
+/**
+ * A class to handle udp packets received
+ */
+
 package Node;
 
 import com.sun.istack.internal.NotNull;
@@ -16,6 +20,11 @@ public class UDPBroadcast extends Thread {
     public static Vector<Node> nodesAlreadyGotFileFrom = new Vector<Node>();
     private Node node;
 
+    /**
+     * Constructor of this class
+     *
+     * @param n
+     */
     public UDPBroadcast(Node n) {
         node = n;
     }
@@ -38,10 +47,6 @@ public class UDPBroadcast extends Thread {
         }
     }
 
-    //   public void gun()
-    //  {
-    //     System.out.println("GUN");
-    //  }
 
     /**
      * Receive a UDP packet. This can be either Get command or discovery message
@@ -96,17 +101,21 @@ public class UDPBroadcast extends Thread {
         }
     }
 
+    /**
+     * A Method to register a responder with ideal characteristics, less than requestWaitPeriod delay and with the last file requested name
+     *
+     * @param responder
+     */
     private void registerResponder(String responder) {
         //System.out.println("RESP : "+responder);
         String ip = "", fName = "";
-        int port = 0, temp = 0,ir=0;
+        int port = 0, temp = 0, ir = 0;
 
         for (int i = 0; i < responder.length(); i++)
             if (responder.charAt(i) == '%') {
-                ir=i;
+                ir = i;
                 break;
             }
-
 
 
         for (int i = 0; i < responder.length(); i++)
@@ -120,23 +129,23 @@ public class UDPBroadcast extends Thread {
         for (int i = temp + 1; i < responder.length(); i++)
             if (responder.charAt(i) == '/') {
                 port = Integer.parseInt(responder.substring(temp + 1, i));
-                fName = responder.substring(i + 1,ir);
+                fName = responder.substring(i + 1, ir);
                 temp = i;
                 break;
             }
 
-        String name="";
+        String name = "";
 
         for (int i = temp + 1; i < responder.length(); i++)
             if (responder.charAt(i) == '%') {
-                name=responder.substring(i+1);
+                name = responder.substring(i + 1);
                 break;
             }
 
 
         System.out.println("REGISTERED A RESPONDER " + ip + " " + port);
         System.out.println(fName);
-        System.out.println(System.currentTimeMillis() - node.requestTime );
+        System.out.println(System.currentTimeMillis() - node.requestTime);
         System.out.println(node.requestWaitPeriod);
         System.out.println();
 
@@ -146,6 +155,11 @@ public class UDPBroadcast extends Thread {
 
     }
 
+    /**
+     * A Method to handle request of files sent by other nodes to thsi node. Checks if the file exists and check whether this node should make a fake delay or not
+     *
+     * @param msg
+     */
     private void handleFileRequest(String msg) {
         //MSG = fileName/IP#pudpPort%Name
         System.out.println("RECEIVED GET REQUEST :: " + msg);
@@ -163,11 +177,11 @@ public class UDPBroadcast extends Thread {
                 break;
             }
 
-        int ir=0;
+        int ir = 0;
 
         for (int i = 0; i < msg.length(); i++)
             if (msg.charAt(i) == '%') {
-                ir=i;
+                ir = i;
                 requester = msg.substring(i + 1);
 
                 break;
@@ -177,12 +191,10 @@ public class UDPBroadcast extends Thread {
             if (msg.charAt(i) == '#') {
 
                 requesterIp = msg.substring(temp + 1, i);
-                requesterPort = Integer.parseInt(msg.substring(i + 1,ir));
+                requesterPort = Integer.parseInt(msg.substring(i + 1, ir));
 
                 break;
             }
-
-
 
 
         System.out.println("FNAME : " + fileName + " IP " + requesterIp + " port " + requesterPort);
@@ -198,10 +210,9 @@ public class UDPBroadcast extends Thread {
                 break;
             }
 
-        for (int i=0;i<Node.unfinishedFiles.size();i++)
-            if(Node.unfinishedFiles.get(i).equals(fileName))
-            {
-                found=false;
+        for (int i = 0; i < Node.unfinishedFiles.size(); i++)
+            if (Node.unfinishedFiles.get(i).equals(fileName)) {
+                found = false;
                 break;
             }
 
@@ -226,7 +237,7 @@ public class UDPBroadcast extends Thread {
 
             System.out.println();
 
-            synchronized (this){
+            synchronized (this) {
                 for (int i = 0; i < nodesAlreadyGotFileFrom.size(); i++)
                     if (nodesAlreadyGotFileFrom.get(i).name.equals(requester)) {
                         receivedFileBefore = true;
@@ -246,11 +257,11 @@ public class UDPBroadcast extends Thread {
     }
 
     /**
-     * Piggyback
+     * A Method to trick the requester
      */
     private void trick() {
         try {
-            sleep(100);
+            sleep(Node.trickTimeMillisec);
         } catch (Exception e) {
             e.printStackTrace();
         }

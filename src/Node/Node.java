@@ -20,17 +20,16 @@ import java.util.Vector;
 
 public class Node {
     public int udpPort, tcpPort;
-    public static long requestWaitPeriod = 2000, requestTime=-1;
+    public static long requestWaitPeriod = 2000, requestTime = -1, trickTimeMillisec = 100;
     public int discoveryIntervalMillisec = 15000;
-    public String ip, name,lastFileRequested;
+    public String ip, name, lastFileRequested;
     private String nestPath = "C:\\Users\\erfan\\Desktop\\BASE1";
     public Vector<Node> cluster = new Vector<Node>();
-    public File nestFile=new File(nestPath);
-    public static int servingLimit = 2;
-    public static boolean responded=false;
-    public static Vector<String> unfinishedFiles=new Vector<>();
+    public File nestFile = new File(nestPath);
+    public static int servingLimit = 5;
+    public static boolean responded = false;
+    public static Vector<String> unfinishedFiles = new Vector<>();
     private Timer timer;
-
 
 
     /**
@@ -47,12 +46,17 @@ public class Node {
         tcpPort = createRandomTcpPort();
 
 
-
     }
 
 
-
-
+    /**
+     * Second constructor for a node, with a cluster vector
+     *
+     * @param ip
+     * @param udpPort
+     * @param name
+     * @param n
+     */
     public Node(String ip, int udpPort, String name, Vector<Node> n) {
         this.udpPort = udpPort;
         this.ip = ip;
@@ -66,26 +70,14 @@ public class Node {
         tcpPort = createRandomTcpPort();
         // new Timer(delayInMiliSeconds, syncPerformer)).start();
 
-
-
-
-
-
-
-
-
-
-      //  System.out.println("INIT LIST");
-     //   list();
-
-
-        //  loop();
     }
 
-
+    /**
+     * Loop function, which serves the user by getting command input string
+     */
     private void loop() {
-        System.out.println("MY TCP PORT IS "+tcpPort);
-        DiscoverySender ds=new DiscoverySender(this,discoveryIntervalMillisec);
+        System.out.println("MY TCP PORT IS " + tcpPort);
+        DiscoverySender ds = new DiscoverySender(this, discoveryIntervalMillisec);
         ds.start();
 
         UDPBroadcast udpBroadcast = new UDPBroadcast(this);
@@ -105,6 +97,11 @@ public class Node {
     }
 
 
+    /**
+     * A Method to process user command string
+     *
+     * @param s
+     */
     private void processString(String s) {
 
 
@@ -148,17 +145,17 @@ public class Node {
         return false;
     }
 
+    /**
+     * Returns a free port number on localhost.
+     * <p>
+     * Heavily inspired from org.eclipse.jdt.launching.SocketUtil (to avoid a dependency to JDT just because of this).
+     * Slightly improved with close() missing in JDT. And throws exception instead of returning -1.
+     *
+     * @return a free port number on localhost
+     * @throws IllegalStateException if unable to find a free port
+     */
     private int createRandomTcpPort() {
-        /**
-         * Returns a free port number on localhost.
-         *
-         * Heavily inspired from org.eclipse.jdt.launching.SocketUtil (to avoid a dependency to JDT just because of this).
-         * Slightly improved with close() missing in JDT. And throws exception instead of returning -1.
-         *
-         * @return a free port number on localhost
-         * @throws IllegalStateException if unable to find a free port
-         */
-        //   private static int findFreePort() {
+
         ServerSocket socket = null;
         try {
             socket = new ServerSocket(0);
@@ -206,52 +203,21 @@ public class Node {
 
     //MSG = GETfileName/IP#udpPort
     private void get(String msg) {
-        responded=true;
+        responded = true;
         requestTime = System.currentTimeMillis();
-        lastFileRequested=msg.substring(3);
-        String added=msg;
-        added=added+"/"+ip+"#"+udpPort+"%"+name;
-        GetSender gs = new GetSender(added,this);
+        lastFileRequested = msg.substring(3);
+        String added = msg;
+        added = added + "/" + ip + "#" + udpPort + "%" + name;
+        GetSender gs = new GetSender(added, this);
         gs.start();
-        TCPReceiver tcpReceiver=new TCPReceiver(msg.substring(3),this,requestTime);
+        TCPReceiver tcpReceiver = new TCPReceiver(msg.substring(3), this, requestTime);
         tcpReceiver.start();
 
         try {
             tcpReceiver.join();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public void deleteFile(File f) {
-        int i;
-
-
-        if (f.isFile()) {
-            try {
-                f.delete();
-            } catch (Exception var5) {
-                var5.printStackTrace();
-            }
-        }
-
-        if (f.isDirectory()) {
-            File[] temp = f.listFiles();
-
-            for (i = 0; i < temp.length; ++i) {
-                this.deleteFile(temp[i]);
-            }
-
-            try {
-                if (!f.delete()) {
-                    System.out.println("ERROR IN DELETING");
-                }
-            } catch (Exception var4) {
-            }
-        }
-
     }
 
 
@@ -264,7 +230,7 @@ public class Node {
      * @throws Exception
      */
     public static void sendUDPSignal(String ip, int port, String msg) {
-        // byte[] message=(ip+"@"+udpPort).getBytes();
+
         byte[] message = msg.getBytes();
         try {
             InetAddress address = InetAddress.getByName(ip);
@@ -280,7 +246,11 @@ public class Node {
         }
     }
 
-
+    /**
+     * Getter for udpPort
+     *
+     * @return
+     */
     public int getUDPPort() {
         return udpPort;
     }
@@ -291,33 +261,15 @@ public class Node {
     }
 
 
-    public void comm() {
-        while (true) {
-            try {
-                sendUDPSignal("127.0.0.1", 30000, "PIOP");
-                System.out.println("I SENT");
-                break;
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
     public static void main(String[] args) {
         Vector<Node> n = new Vector<Node>();
         n.add(new Node("127.0.0.1", 62000, "N2"));
         n.add(new Node("127.0.0.1", 63000, "N3"));
-
-
-        //    System.out.println("PRE LOBBY");
-
-        //   for (int i=0;i<n.size();i++)
-        //     System.out.println(n.get(i).getName());
+        ;
 
         Node node = new Node("127.0.0.1", 30000, "N1", n);
         node.loop();
-        //   node.comm();
+
     }
 }
 

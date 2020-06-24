@@ -1,6 +1,9 @@
+/**
+ * A Class to handle file sending mechanism by a server
+ */
 package Node;
 
-import javax.swing.*;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -15,7 +18,12 @@ public class TCPSender extends Thread {
     private BufferedOutputStream bos;
     private Node node;
 
-
+    /**
+     * Constructor of this class
+     *
+     * @param s
+     * @param n
+     */
     public TCPSender(Socket s, Node n) {
         socket = s;
         node = n;
@@ -51,6 +59,12 @@ public class TCPSender extends Thread {
         }
     }
 
+    /**
+     * A Method to send a file using tcp connections
+     *
+     * @param fileName
+     * @throws Exception
+     */
     public void sendFile(String fileName) throws Exception {
         File[] f = node.nestFile.listFiles();
         boolean found = false;
